@@ -1,0 +1,4 @@
+# _config.yml
+title: "My Project Docs"
+description: "One‐line description of your project"
+theme: jekyll-theme-cayman # ← pick any built-in theme names
