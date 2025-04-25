@@ -1,14 +1,7 @@
-# use the remote theme
-remote_theme: mmistakes/minimal-mistakes@4.24.0
-plugins:
-  - jekyll-remote-theme
+theme: jekyll-theme-lanyon
+# (built-in to GH Pages; no plugins needed)
 
-# turn on global numbered headings
-numbered_headings: true
-
-# optional: configure which levels to number
-# (defaults to 2..4)
-numbered_headings_levels: 1..6
-
-# site metadata
-title: "BCI Movement Decoding"
+# To get math + code, add:
+kramdown:
+  math_engine: mathjax
+highlighter: rouge
