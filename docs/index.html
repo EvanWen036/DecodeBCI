@@ -1,20 +1,29 @@
----
-layout: default
----
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <title>{{ page.title }}</title>
+    <meta charset="UTF-8" />
+    <title>Document</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="description" content="Description" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, minimum-scale=1.0"
+    />
+    <link
+      rel="stylesheet"
+      href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css"
+    />
   </head>
   <body>
-    <h1>Introduction</h1>
-    <p>
-      Every year approximately 15.4 million people lived paralyzed [1]. Many of
-      these people will never be able to move their extremities for the rest of
-      their lives. Despite having neurological activity, they simply do not have
-      motor function, significantly impeding their quality of life.
-    </p>
+    <div id="app"></div>
+    <script>
+      window.$docsify = {
+        name: "",
+        repo: "",
+      };
+    </script>
+    <!-- Docsify v4 -->
+    <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+    <script src="https://unpkg.com/docsify-latex"></script>
   </body>
 </html>

@@ -1,7 +1,0 @@
-theme: jekyll-theme-lanyon
-# (built-in to GH Pages; no plugins needed)
-
-# To get math + code, add:
-kramdown:
-  math_engine: mathjax
-highlighter: rouge
