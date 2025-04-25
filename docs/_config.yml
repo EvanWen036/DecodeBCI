@@ -1,4 +1,14 @@
-# _config.yml
-title: "Using Support Vector Machines to Decode Movement"
-description: "Written By Evan Wen"
-theme: jekyll-theme-cayman # ← pick any built-in theme names
+# use the remote theme
+remote_theme: mmistakes/minimal-mistakes@4.24.0
+plugins:
+  - jekyll-remote-theme
+
+# turn on global numbered headings
+numbered_headings: true
+
+# optional: configure which levels to number
+# (defaults to 2..4)
+numbered_headings_levels: 1..6
+
+# site metadata
+title: "BCI Movement Decoding"
