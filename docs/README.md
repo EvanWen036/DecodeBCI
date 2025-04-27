@@ -49,7 +49,7 @@ One of the difficulties of working with EEG recordings in a machine learning con
 
 ## Support Vector Machines
 
-Now, we will explore how SVMs mathematically determine the decision boundary between two classes. We start out with our dataset which is defined by pairs of N pairs of $ (x_1, y_1), (x_2, y_2) \dots (x_N, y_N) $. For each pair $x_i \in \mathbb{R}^p$ and $y_i \in \{-1,1\} $. $x_i$ denotes the features while $y_i$ provides the class label. Now, we can define the hyperplane separating the two classes:
+Now, we will explore how SVMs mathematically determine the decision boundary between two classes. We start out with our dataset which is defined by pairs of N pairs of $ (x_1, y_1), (x_2, y_2) \dots (x_N, y_N) $. For each pair $x_i \in \mathbb{R}^p$ and $y_i \in \{-1,1\} $, $x_i$ denotes the features while $y_i$ provides the class label. Now, we can define the hyperplane separating the two classes:
 
 $$
     f(x) = x^T\omega + b
@@ -208,6 +208,132 @@ When training and testing on the same type of data, we got a baseline for how ac
 [Figure 4](#fig-cv) demonstrates a high-level overview of our two-level cross validation approach. The first step is dividing the data into 6 stratified folds (class proportions are preserved in each fold). Each fold has a set of 200 trials for training and 40 trials withheld for testing. The 200 training trials are then used to perform a second-level cross validation procedure. In the second level, we tested 0.01, 1, 100, and 10000 as regularization parameter (denoted now as $\alpha$, previously referred to as C) values. The $\alpha$ value with the highest second-level cross-validated accuracy was then selected. Finally, we trained an SVM with the optimal $\alpha$ which yielded our per-fold results in the form of accuracy metrics and an ROC curve. After performing the procedure on all folds, we aggregated per-fold results to obtain the model's overall performance.
 
 In our cross‐validation experiments, we observed that performance varied less across folds when we trained and tested on overt‐movement data than on the imagined‐movement trials. We found that the EEG patterns during actual arm movements were stronger and more consistent, so each fold contained similar examples and yielded a stable decision boundary. In contrast, imagery signals were weaker and more sensitive to factors like attention and fatigue, which meant different folds sampled different mixes of clear versus faint trials. As a result, our ROC and accuracy scores fluctuated more across folds for the imagined‐movement condition ​
+
+Full code with the training, evaluation, and visualization procedures is available in the [Appendix](#appendix).
+# Results
+
+## Same-train: Overt
+
+The first scenario: training and testing on overt had by far the best performance out of any scenario. As shown in [Figure 5](#fig-roc1), the model achieved near-perfect AUC across the six folds. The per-fold accuracies were 92.5\%, 100\%, 97.5\%, 97.5\%, 90\%, and 95\%. The model's overall cross-validated accuracy was 95.4\%. In the case of the overt dataset, the per-fold ROC and accuracy closely matched the overall classification performance, meaning fold performance was relatively representive of overall performance. [Figure 5](#fig-roc1) contains the ROC curves for each fold as well as the overall ROC curve.
+
+<figure id="fig-roc1" style="display: block; margin: 0 auto; text-align: center;">
+  <img src="./assets/sameTrainOvertROC.png" alt="ROC curve for SVM trained and evaluated on overt data" />
+  <figcaption><strong>Figure 5.</strong> ROC curve for SVM trained and evaluated on overt data.</figcaption>
+</figure>
+
+
+Next, we visualized the SVM weights. [Figure 6](#fig6) contains a stem plot with the channel index on the x-axis and the signed SVM weight on the y-axis. [Figure 7](#fig7) contains a visualization of the weights across the surface of the brain. To project the weights onto the cortical surface, we collapsed the original 204-element weight vector into a 102-element vector of per-electrode magnitudes by pairing each electrode’s two features (e.g. indices 1 & 2, 3 & 4, 5 & 6, etc.) and computing their Euclidean norm.
+
+<div class="figure-row">
+
+  <div class="figure-item" style="display: flex; flex-direction: column;">
+
+<figure id="fig6">
+
+<img src="assets/SVMStemOvert1.png"
+    alt="Signed SVM weights across channels"
+    style="width:100%; height:auto;">
+<figcaption><strong>Figure 6.</strong> Signed SVM weights across channels for 1st fold (highlighted top 6). The table below contains the highest weights by magnitude and their respective channel indices. </figcaption>
+</figure>
+
+
+<table style="
+      align-self: center;
+      width: auto;
+      border-collapse: collapse;
+      ">
+    <thead>
+    <tr>
+        <th style="border-bottom:1px solid #ccc; padding: 0.4em;">Channel index</th>
+        <th style="border-bottom:1px solid #ccc; padding: 0.4em;">Weight</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr><td style="padding: 0.4em;">154</td><td style="padding: 0.4em;">0.0014</td></tr>
+    <tr><td style="padding: 0.4em;">140</td><td style="padding: 0.4em;">0.0013</td></tr>
+    <tr><td style="padding: 0.4em;">136</td><td style="padding: 0.4em;">-0.0011</td></tr>
+    <tr><td style="padding: 0.4em;">100</td><td style="padding: 0.4em;">0.0010</td></tr>
+    <tr><td style="padding: 0.4em;">151</td><td style="padding: 0.4em;">0.0009</td></tr>
+    <tr><td style="padding: 0.4em;">155</td><td style="padding: 0.4em;">-0.0008</td></tr>
+    </tbody>
+</table>
+
+
+  </div>
+
+  <!-- Right column: heatmap figure unchanged -->
+  <figure class="figure-item" id="fig7">
+    <img src="assets/SVMWeightsOnBrainOvert1.png"
+         alt="SVM weights heatmap for overt condition"
+         style="width:100%; height:auto;">
+    <figcaption><strong>Figure 7.</strong> Topographic heatmap of SVM weights (fold 1, overt).</figcaption>
+  </figure>
+
+</div>
+
+From these two figures, we show that the highest magnitude weight channel indices are all within the 100 to 160 range. These correspond to electrodes 50 to 80. When referencing [Figure 3](#fig-electrodes), we see these electrodes are located in the bottom left quadrant of the brain, the same region heavily highlighted in [Figure 7](#fig-7).
+
+## Same-train: Imagined
+
+Next, we performed training and evaluation on the imagined dataset. This dataset proved to be more challenging with the overall cross-validated accuracy dropping to 87.9\%. The accuracy across folds varied significantly more: 85\%, 80\%, 82.5\%, 97.5\%, 90.0\%, 92.5\%. [Figure 8](#fig-roc1) contains the per-fold and overall cross-validated ROC curves.
+<span style = "color: red"> TODO: talk about lack of consistency
+</span>
+
+<figure id="fig-roc1" style="display: block; margin: 0 auto; text-align: center;">
+  <img src="./assets/sameTrainImagROC.png" alt="ROC curve for SVM trained and evaluated on overt data" />
+  <figcaption><strong>Figure 8.</strong> ROC curve for SVM trained and evaluated on imagined data.</figcaption>
+</figure>
+
+Next, we performed the same weight visualization analysis by plotting the weight stem plot and the heatmap across the brain surface.
+
+
+<div class="figure-row">
+
+  <div class="figure-item" style="display: flex; flex-direction: column;">
+
+<figure id="fig9">
+
+<img src="assets/SVMStemImag1.png"
+    alt="Signed SVM weights across channels"
+    style="width:100%; height:auto;">
+<figcaption><strong>Figure 9.</strong> Signed SVM weights across channels for 1st fold (highlighted top 6). The table below contains the highest weights by magnitude and their respective channel indices. </figcaption>
+</figure>
+
+<table style="
+      align-self: center;
+      width: auto;
+      border-collapse: collapse;
+      ">
+    <thead>
+    <tr>
+        <th style="border-bottom:1px solid #ccc; padding: 0.4em;">Channel index</th>
+        <th style="border-bottom:1px solid #ccc; padding: 0.4em;">Weight</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr><td style="padding: 0.4em;">151</td><td style="padding: 0.4em;">0.0027</td></tr>
+    <tr><td style="padding: 0.4em;">155</td><td style="padding: 0.4em;">-0.0026</td></tr>
+    <tr><td style="padding: 0.4em;">154</td><td style="padding: 0.4em;">0.0024</td></tr>
+    <tr><td style="padding: 0.4em;">140</td><td style="padding: 0.4em;">0.0024</td></tr>
+    <tr><td style="padding: 0.4em;">128</td><td style="padding: 0.4em;">-0.0023</td></tr>
+    <tr><td style="padding: 0.4em;">153</td><td style="padding: 0.4em;">-0.0022</td></tr>
+    </tbody>
+</table>
+  </div>
+
+  <!-- Right column: heatmap figure unchanged -->
+  <figure class="figure-item" id="fig10">
+    <img src="assets/SVMWeightsOnBrainImag1.png"
+         alt="SVM weights heatmap for overt condition"
+         style="width:100%; height:auto;">
+    <figcaption><strong>Figure 10.</strong> Topographic heatmap of SVM weights (fold 1, imagined).</figcaption>
+  </figure>
+
+</div>
+
+Interestingly, the SVM when trained on imagined data obtains much greater max weights than the SVM trained on overt data. [Figure 9](#fig-9) also shows the greatest magnitude weights tend to occur in similar locations. Channels 140, 151, 154, and 155 are in the top-6 for both the imagined and overt datasets. This implies that the two datasets likely have similar signals that just happen to vary in strength. [Figure 10](#fig-10) demonstrates that the SVM also heavily focuses on the bottom left quadrant of the brain; however, there are also regions of high weight scattered through the rest of the brain unlike the SVM trained on overt data.
+
+# Appendix
 
 
 # Works Cited
