@@ -45,6 +45,10 @@ The Support Vector Machine (SVM) was originally proposed as by Boser et al [^3].
 
 One of the difficulties of working with EEG recordings in a machine learning context is that each recording will often have dozens or hundreds of channels. However, despite the dimensionality being high oftentimes there aren't be a sufficient number of samples since EEGs are not often released into publicly available datasets. This leads to situations where the dimensionality can exceed the number of training samples ("small-n, large-p"). The SVM classifier handles this situation gracefully because the complexity of its decision boundary depends on the margin width and the number of support vectors, not directly on the total feature count. In practice, even when the dimensionality far exceeds the number of training samples, the margin-maximization principle prevents overfitting and yields a classifier that is able to generalize well. This is in contrast to other classifiers which would develop a complicated decision statistic, leading to overfitting.
 
+## Potential Applications of this Approach
+
+By leveraging advanced pattern‐recognition techniques, machine learning can detect subtle alterations in EEG waveforms that often precede overt clinical symptoms, enabling earlier and more accurate diagnosis of disorders like epilepsy or traumatic brain injury [^15]. Automated, real‐time ML pipelines could continuously monitor patients—alerting clinicians to emergent events, reducing labor‐intensive review of long EEG recordings, and improving patient safety. Furthermore, combining EEG‐based biomarkers with ML‐driven prognostic models would allow truly personalized treatment plans, tailoring medication regimens or neuromodulation protocols to each individual’s unique neural signature. In research settings, perfected ML-EEG analysis would accelerate our understanding of brain network dynamics, opening the door to novel therapeutic targets and biomarkers not only for neurological diseases but also for psychiatric and cognitive disorders.
+
 # Mathematical Formulation
 
 ## Support Vector Machines
@@ -53,7 +57,7 @@ Now, we will explore how SVMs mathematically determine the decision boundary bet
 
 $$
     f(x) = x^T\omega + b
-$$ This is where $\omega$ is a weight vector (for now let's assume it's a unit vector). $f(x)$ can also be used to form the decision boundary where depending on the sign of $f(x_i)$, point $x_i$ will be classified as one class versus the other. Now we can formulate an optimization problem:
+$$ This is where $\omega$ is a weight vector (for now let's assume it's a unit vector). $f(x)$ can also be used to form the decision boundary where depending on the sign of $f(x_i)$, point $x_i$ will be classified as one class versus the other. We will also have a constant term $b$ which moves the boundary without altering its orientation. Now we can formulate an optimization problem:
 
 
 $$
@@ -215,6 +219,8 @@ X_img, y_img = convertToXY(df_img_1, df_img_2)
 X_over, y_over = convertToXY(df_over_1, df_over_2)
 ```
 
+**Our Classification Problem** can be formulated as follows. We are given $X \in \mathbb{R}^{240*204}, y \in \mathbb{R}^{240}$ where $X$ represents the 204 EEG electrical channels and $y$ represents the binary label, denoting left or right movement. We must develop an SVM classifier that finds the optimal $\omega$ and $b$ parameters.
+
 One step we later added to the training pipeline was standardization. Originally, we ignored standardizing the features; however, we found that feature standardization greatly improved performance on nonlinear kernels (for the linear kernel, performance was roughly the same). Thus, we utilized the StandardScaler from sklearn. This essentially performs standardization on each feature independently, computing the mean and scaling all values to unit variance.
 
 ```python
@@ -247,6 +253,8 @@ When training and testing on the same type of data, we got a baseline for how ac
 
 [Figure 4](#fig-cv) demonstrates a high-level overview of our two-level cross validation approach. The first step is dividing the data into 6 stratified folds (class proportions are preserved in each fold). Each fold has a set of 200 trials for training and 40 trials withheld for testing. The 200 training trials are then used to perform a second-level cross validation procedure. In the second level, we tested 0.01, 1, 100, and 10000 as regularization parameter (denoted now as $\alpha$, previously referred to as C) values. The $\alpha$ value with the highest second-level cross-validated accuracy was then selected. Finally, we trained an SVM with the optimal $\alpha$ which yielded our per-fold results in the form of accuracy metrics and an ROC curve. After performing the procedure on all folds, we aggregated per-fold results to obtain the model's overall performance.
 
+Two-level (nested) cross-validation is valuable because it cleanly separates hyperparameter tuning from performance evaluation, preventing the “peeking” that can make results look unrealistically good. In the inner loop, we search over hyperparameters, using only the training portion of each outer fold—so no information about the withheld data ever influences the model configuration. Then the outer loop measures the tuned model’s accuracy and AUC on completely unseen data, providing an unbiased estimate of its performance in practice. This approach not only guards against overfitting hyperparameters, but also quantifies the variability of performance estimates across different splits, giving insight into how stable the model really is.
+
 In our cross‐validation experiments, we observed that performance varied less across folds when we trained and tested on overt‐movement data than on the imagined‐movement trials. We found that the EEG patterns during actual arm movements were stronger and more consistent, so each fold contained similar examples and yielded a stable decision boundary. In contrast, imagery signals were weaker and more sensitive to factors like attention and fatigue, which meant different folds sampled different mixes of clear versus faint trials. As a result, our ROC and accuracy scores fluctuated more across folds for the imagined‐movement condition ​
 
 # Results
@@ -255,7 +263,7 @@ In our cross‐validation experiments, we observed that performance varied less 
 
 ### Same-train: Overt
 
-The first scenario: training and testing on overt had by far the best performance out of any scenario. As shown in [Figure 5](#fig-roc1), the model achieved near-perfect AUC across the six folds. The per-fold accuracies were 97.5\%, 95.0\%, 97.5\%, 97.5\%, 95.0\%, and 95.0\%. The model's overall cross-validated accuracy was 96.3\% (std. 1.25). In the case of the overt dataset, the per-fold ROC and accuracy closely matched the overall classification performance, meaning fold performance was relatively representive of overall performance. [Figure 5](#fig-roc1) contains the ROC curves for each fold as well as the overall ROC curve.
+The first scenario: training and testing on overt had by far the best performance out of any scenario. As shown in [Figure 5](#fig-roc1), the model achieved near-perfect AUC across the six folds. The per-fold accuracies were 97.5\%, 95.0\%, 97.5\%, 97.5\%, 95.0\%, and 95.0\%. The model's overall cross-validated accuracy was 96.3\% (std. 1.25). In the case of the overt dataset, the per-fold ROC and accuracy closely matched the overall classification performance, meaning fold performance was relatively representive of overall performance for both accuracy and ROC. [Figure 5](#fig-roc1) contains the ROC curves for each fold as well as the overall ROC curve.
 
 <figure id="fig-roc1" style="display: block; margin: 0 auto; text-align: center;">
   <img src="./assets/sameTrainOvertROC.png" alt="ROC curve for SVM trained and evaluated on overt data" />
@@ -316,7 +324,7 @@ From these two figures, we show that the highest magnitude weight channel indice
 
 ### Same-train: Imagined
 
-Next, we performed training and evaluation on the imagined dataset. This dataset proved to be more challenging with the overall cross-validated accuracy dropping to 87.5\% (std. 3.54). The accuracy across folds varied significantly more: 85.0\%, 95.0\%, 85.0\%, 85.0\%, 87.5\%, 87.5\%. With significant variability across the folds, the per-fold performance does not accurately represent the overall classification performance. The imagined dataset had significant noise; thus, results varied by up to 10\% in terms of classification accuracy. The total cross-validated accuracy was the best portrayal of the classifier's performance in this scenario. [Figure 8](#fig8) contains the per-fold and overall cross-validated ROC curves.
+Next, we performed training and evaluation on the imagined dataset. This dataset proved to be more challenging with the overall cross-validated accuracy dropping to 87.5\% (std. 3.54). The accuracy across folds varied significantly more: 85.0\%, 95.0\%, 85.0\%, 85.0\%, 87.5\%, 87.5\%. With significant variability across the folds, the per-fold performance does not accurately represent the overall classification performance. The imagined dataset had significant noise; thus, results varied by up to 10\% in terms of classification accuracy. The total cross-validated accuracy was the best portrayal of the classifier's performance in this scenario. The ROCs were a little more consistent than accuracy; however, they still showed significant variation. Thus, the per-fold ROC was not perfectly representative of the total ROC.[Figure 8](#fig8) contains the per-fold and overall cross-validated ROC curves.
 
 <figure id="fig8" style="display: block; margin: 0 auto; text-align: center;">
   <img src="./assets/sameTrainImagROC.png" alt="ROC curve for SVM trained and evaluated on overt data" />
@@ -374,6 +382,8 @@ Interestingly, the SVM when trained on imagined data obtains much greater max we
 
 In terms of regularization parameters, across the 12 combined folds in the same-training scenarios, $\alpha=1$ was chosen nine times and $\alpha=0.01$ was chosen three times. This demonstrates that between these two training scenarios there is not significant variability in the chosen regularization parameter.
 
+The overt data had significantly greater consistency between the folds than the imagined data. This is likely due to the imagined data having significantly noise, hindering the model's ability to properly learn the correct signals.
+
 ### Cross-Train: Overt->Imagined
 
 The next training scenario was training on the model on the overt dataset before testing on the imagined dataset. We performed a six-fold cross validation to first select the optimal $\alpha$ before training an SVM on the entire overt dataset. Then,we evaluated the SVM on the imagined dataset. The model achieved an overall accuracy of 89.2\%. [Figure 11](#fig-ct1) contains the ROC curve for this cross-training scenario.
@@ -396,7 +406,7 @@ Finally, we performed one last training scenario where we trained on the imagine
   <figcaption><strong>Figure 12.</strong> ROC curve for SVM trained on imagined data before evaluated on overt data. Stronger classification performance is in the top right. </figcaption>
 </figure>
 
-[Figure 12](#fig-ct2) contains the ROC for the second cross-training scenario. Classification performance on the second scenario was better than the other cross-training scenario. The likely explanation is that imagined data is significantly noisier, making it difficult for the model to predict accurately when testing. However, when training on imagined data, the model is able to successfully weed out noise and learn important features. Thus, in general, we would prefer higher quality testing data which would allow the model to better apply learned features. When the model is trained on noisier data, it will still be able to deduce some of the patterns involved, leading to greater classification performance.
+[Figure 12](#fig-ct2) contains the ROC for the second cross-training scenario. Classification performance on the second scenario was better than the other cross-training scenario. On the second scenario, the SVM had both higher accuracy and greater AUC. The likely explanation is that imagined data is significantly noisier, making it difficult for the model to predict accurately when testing. However, when training on imagined data, the model is able to successfully weed out noise and learn important features. Thus, in general, we would prefer higher quality testing data which would allow the model to better apply learned features. When the model is trained on noisier data, it will still be able to deduce some of the patterns involved, leading to greater classification performance.
 
 ## RBF Kernel
 
@@ -468,6 +478,8 @@ Next, we performed the same cross-training procedure with an RBF-kernel SVM. On 
 
 </div>
 
+In general, the RBF-kernel SVM had significant variance in ROC and accuracy between folds. The standard deviations for the cross-validated accuracy are much higher. Thus, individual fold performance does not represent the overall classifier performance well.
+
 Across all folds of RBF-kernel SVM training, the hyperparameters stayed relatively constant. $\alpha$ was always selected to 100 and $\gamma$ was nearly always 0.001 (there was one fold where it was 0.01).
 
 ## Polynomial Kernel
@@ -506,6 +518,8 @@ For the overt same-training scenario, the polynomial-kernel SVM achieved 97.5\%,
   </div>
 
 </div>
+
+Similar to the RBF-kernel SVM, the polynomial kernel SVM had great variability between folds when it came to ROC and accuracy.
 
 ### Cross-Training Scenarios
 
@@ -554,6 +568,8 @@ In terms of hyperparameters, the polynomial kernel SVM had the greatest variance
 - **Training Scenario**: generally speaking, training and evaluating on overt will always yield the best classification performance. This is followed by training on imagined and evaluating on overt. Interestingly, this seems to imply that the evaluation set is more important that the training set when it comes to classification performance. The two worst performaning scenarios were the same-train imagined and cross-train overt to imagined. This shows that performing inference on the imagined dataset is difficult regardless of how effective training is.
 - **SVM Kernel**: the kernel also plays a significant role in classification performance. [Figure 21](#fig21) shows that the linear kernel is the best kernal in situations where the model is trained on overt data. However, the RBF kernel is best for the imagined data training scenario. One caveat of using the nonlinear kernels; however, is that there is significantly higher variance across folds. In the same-training scenarios, nonlinear kernels have much higher variance regardless of dataset utilized. Furthermore, nonlinear kernels have more hyperparameters which means more effort is necessary for tuning. In the case hyperparameters are not tuned properly, the nonlinear SVMs are unlikely to produce meaningful results.
 
+## Consistency Issues
+Throughout the experiments, we notice that on the overt dataset models are more consistent. This is due to the signals being the strongest and most consistent in the overt dataset. Nearly everyone when moving their left arm will trigger the same neurologic signals; however, this is not the case for people imagining moving their left arm. This means across any imagined fold the data may look significantly different. Furthermore, the linear kernel is the most stable; offering reliable performance across each fold. When introducing nonlinear kernels the variability significantly increases.
 
 ## Unique Approaches
 
@@ -599,6 +615,10 @@ Optuna: A Next-generation Hyperparameter Optimization Framework. In KDD. \
 [^13] Schölkopf, B., & Smola, A. J. (2002). Learning with kernels: Support vector machines, regularization, optimization, and beyond. MIT Press.
 
 [^14] Harris, C.R., Millman, K.J., van der Walt, S.J. et al. Array programming with NumPy.
+
+[^15] Jadhav, C., Kamble, P., Mundewadi, S., Jaiswal, N., Mali, S., Ranga, S., Suvvari, T. K., & Rukadikar, A. (2022). Clinical applications of EEG as an excellent tool for event related potentials in psychiatric and neurotic disorders. International journal of physiology, pathophysiology and pharmacology, 14(2), 73–83.
+
+[^16] Pauli Virtanen, Ralf Gommers, Travis E. Oliphant, Matt Haberland, Tyler Reddy, David Cournapeau, Evgeni Burovski, Pearu Peterson, Warren Weckesser, Jonathan Bright, Stéfan J. van der Walt, Matthew Brett, Joshua Wilson, K. Jarrod Millman, Nikolay Mayorov, Andrew R. J. Nelson, Eric Jones, Robert Kern, Eric Larson, CJ Carey, İlhan Polat, Yu Feng, Eric W. Moore, Jake VanderPlas, Denis Laxalde, Josef Perktold, Robert Cimrman, Ian Henriksen, E.A. Quintero, Charles R Harris, Anne M. Archibald, Antônio H. Ribeiro, Fabian Pedregosa, Paul van Mulbregt, and SciPy 1.0 Contributors. (2020) SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python. Nature Methods, 17(3), 261-272. DOI: 10.1038/s41592-019-0686-2.
 
 
 $$
